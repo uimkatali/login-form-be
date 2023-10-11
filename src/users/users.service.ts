@@ -1,44 +1,54 @@
-import { Get, HttpException, Injectable } from '@nestjs/common';
+import { Get, HttpException, Injectable, Post } from '@nestjs/common';
 import { USERS } from 'src/MOCK';
-import { UserData } from 'src/types';
+import { InsertUser, UpdateUser, UserData } from 'src/types/types';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class UsersService {
-  users = USERS;
-  @Get()
-  getAllUsers(): Promise<UserData[]> {
-    return new Promise((resolve) => {
-      resolve(this.users);
-    });
+  constructor(
+    @InjectModel('user') private readonly userModel: Model<UserData>,
+  ) {}
+
+  async getAllUsers() {
+    const foundUsers = await this.userModel.find();
+
+    return foundUsers.map((user) => ({
+      id: user._id,
+      name: user.name,
+      age: user.age,
+      role: user.role,
+    }));
   }
 
-  getUser(userId: string): Promise<UserData> {
-    let id = userId;
-    return new Promise((resolve) => {
-      const user = this.users.find((user) => user._id === id);
-      if (!user) {
-        throw new HttpException('User does not exist!', 404);
-      }
-      resolve(user);
-    });
+  async getUserByName(name: string) {
+    const foundUserByName = await this.userModel.findOne<UserData>({ name });
+    return foundUserByName;
   }
 
-  addUser(user: UserData): Promise<UserData[]> {
-    return new Promise((resolve) => {
-      this.users.push(user);
-      resolve(this.users);
+  async insertUser(user: InsertUser) {
+    const isUser = await this.userModel.findOne<InsertUser>({
+      name: user.name,
     });
+    if (!isUser) {
+      const newUser = new this.userModel(user);
+      await newUser.save();
+      return newUser;
+    }
   }
 
-  deleteUser(userId: string): Promise<UserData[]> {
-    let id = userId;
-    return new Promise((resolve) => {
-      let index = this.users.findIndex((user) => user._id === id);
-      if (index === -1) {
-        throw new HttpException('User does not exist!', 404);
-      }
-      this.users.splice(1, index);
-      resolve(this.users);
-    });
+  async updateUser(id: string, newUser: UpdateUser) {
+    const foundUserAndUpdate = await this.userModel.findByIdAndUpdate(
+      id,
+      newUser,
+    );
+    return foundUserAndUpdate;
+  }
+
+  async deleteUser(id: string) {
+    const foundUserAndDelete = await this.userModel.findByIdAndRemove<UserData>(
+      { id },
+    );
+    return foundUserAndDelete;
   }
 }

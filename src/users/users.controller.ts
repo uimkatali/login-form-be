@@ -8,31 +8,30 @@ import {
   Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { UserData } from 'src/types';
+import { InsertUser, UserData } from 'src/types/types';
 
 @Controller('users')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  async getAllUsers() {
-    const users = await this.usersService.getAllUsers();
-    return users;
+  getAllUsers() {
+    return this.usersService.getAllUsers();
   }
 
-  @Get(':userId')
-  async getUser(@Param('userId') userId) {
-    const user = await this.usersService.getUser(userId);
-    return user;
+  @Get(':name')
+  getUserByName(@Param('name') userName: string) {
+    return this.usersService.getUserByName(userName);
   }
 
   @Post()
-  async addUser(@Body() userData: UserData) {
-    return await this.usersService.addUser(userData);
+  async insertUser(@Body() user: InsertUser) {
+    console.log(user);
+    return await this.usersService.insertUser(user);
   }
 
-  @Delete(':userId')
-  async deleteUser(@Query('userId') userId) {
-    return await this.usersService.deleteUser(userId);
+  @Delete(':id')
+  async deleteUser(@Query('id') id: string) {
+    return await this.usersService.deleteUser(id);
   }
 }
